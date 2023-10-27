@@ -35,6 +35,31 @@ class Dron:
     #Define el destructor del dron (no imprima nada en el destructor)
     def destroy(self):
         pass
+
+    #Definir los getters y setters para los atributos del dron
+    def get_id(self):
+        return self.id
+    
+    def get_token(self):
+        return self.token
+    
+    def get_state(self):
+        return self.state
+    
+    def get_position(self):
+        return self.position
+    
+    def set_id(self, id):
+        self.id = id
+    
+    def set_token(self, token):
+        self.token = token
+    
+    def set_state(self, state):
+        self.state = state
+    
+    def set_position(self, position):
+        self.position = position
     
     def register(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -64,60 +89,68 @@ class Dron:
                 return False
 
 
-    def authenticate(self):
-        # Crear un socket para comunicarse con Engine
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((HOST_ENGINE, PORT_ENGINE))
-            # Crear mensaje de autenticación
-            auth_msg = {
-                'id': self.id,
-                'token': self.token
-            }
-            # Enviar mensaje al Engine
-            s.sendall(json.dumps(auth_msg).encode())
-
-            # Recibir respuesta del Engine
-            data = s.recv(1024)
-            if not data:  # Si no se recibe respuesta, imprimir un error y retornar False
-                print("No se recibió respuesta del Engine.")
-                return False
-            
-            response = json.loads(data.decode())
-
-            try:
-                response = json.loads(data.decode())
-                if response['status'] == 'success':
-                    print(f"Dron {self.id} autenticado exitosamente en el Engine!")
-                    return True
-                else:
-                    print(f"Error de autenticación del Dron {self.id}.")
-                    return False
-            except json.JSONDecodeError:  # Si hay un error al decodificar el JSON, manejarlo
-                print("Respuesta del Registry no es un JSON válido.")
-                return False
-def mover_dron_a(x, y):
-    # Código para mover el dron a las coordenadas (x, y).
-    # Esto depende de cómo esté programado el dron y qué bibliotecas o SDKs estés utilizando.
-    pass
-            
-    #################################################
-    #Comunicacion del dron con el Engine
-    #################################################
+#################################################
+#Comunicacion del Engine con el Dron
+#################################################
     # El dron necesita saber su propio ID para suscribirse al tópico correcto.
-drone_id = "ID_DEL_DRON"
-def listen_to_kafka():
-    consumer = KafkaConsumer(f'drone-{drone_id}', bootstrap_servers='localhost:9092')
-    for message in consumer:
-        # Extraer las coordenadas x e y del mensaje.
-        x, y = message.value.decode('utf-8').split(',')
-    
-    # Convertir x e y en números enteros (si es necesario).
-    x = int(x)
-    y = int(y)
+    # Inicializar el consumidor de Kafka
+    def recive_data(self):
+        consumer = KafkaConsumer(
+            'drones_to_engine',
+            bootstrap_servers='localhost:9092',
+            auto_offset_reset='earliest',
+            value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+        )
+        # Función que procesa el mensaje y llama al método run
+        def process_message(message):
+            # Extraer datos del mensaje
+            ID_DRON = message['ID_DRON']
+            COORDENADA_X_ACTUAL = message['COORDENADA_X_ACTUAL']
+            COORDENADA_Y_ACTUAL = message['COORDENADA_Y_ACTUAL']
+            ESTADO_ACTUAL = message['ESTADO_ACTUAL']
+            
+            # Si el ID del dron en el mensaje coincide con el ID del dron actual, procesar el mensaje
+            if ID_DRON == self.id:
+                # Aquí puedes llamar a tu método run con los datos extraídos
+                # Por ejemplo: run(ID_DRON, COORDENADA_X_ACTUAL, COORDENADA_Y_ACTUAL, ESTADO_ACTUAL)
+                pass
+        
+        # Consumir mensajes de Kafka
+        for message in consumer:
+            process_message(message.value)
 
-    # Aquí es donde el dron actuaría en base a las coordenadas recibidas.
-    # Por ejemplo, podría ser una función que mueva el dron a esas coordenadas.
-    mover_dron_a(x, y)
+        
+
+#################################################
+#Comunicacion del Dron con el Engine
+#################################################
+# Método para enviar una actualización al Engine
+    def send_update(self):
+        # Crear el productor de Kafka
+        producer = KafkaProducer(
+            bootstrap_servers='localhost:9092',
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+        
+        # Preparar el mensaje en formato JSON
+        message = {
+            'ID_DRON': self.id,
+            'COORDENADA_X_ACTUAL': self.position[0],
+            'COORDENADA_Y_ACTUAL': self.position[1],
+            'ESTADO_ACTUAL': self.state
+        }
+        
+        # Enviar el mensaje al tópico drones_to_engine
+        producer.send('drons_to_engine', value=message)
+        
+        
+        # Cerrar el productor
+        producer.close()
+        
+        # Emitir el mensaje en pantalla
+        print("Mensaje de Actualización enviado con ID de Dron: {self.id} ")
+
+
 
 def menu():
     dron = Dron()
@@ -134,7 +167,7 @@ def menu():
             dron.authenticate()
         elif opcion == 3:
             # Comienza a escuchar en un hilo separado
-            kafka_thread = threading.Thread(target=listen_to_kafka)
+            kafka_thread = threading.Thread(target=dron.listen)
             kafka_thread.start()
         elif opcion == 4:
             print("Saliendo del programa.")
@@ -142,5 +175,33 @@ def menu():
         else:
             print("Opcion invalida.")
 
+def main():
+    dron = Dron()
+    
+    # Imprime el ID y la posición del dron al inicio
+    print(f"ID del dron: {dron.get_id()}")
+    print(f"Posición del dron: {dron.get_position()}")
+    dron.send_update()
+    dron.set_id(3)
+    dron.send_update()
+    
+    # Enviar la actualización (si deseas ver el mensaje "Mensaje de Actualización enviado")
+    #dron.send_update()
+    
+    # Cambiar la posición del dron y el estado
+    dron.set_position((4,5))
+    dron.set_state(STATES[2])
+    
+    # Imprime el ID y la posición del dron después de cambiarla
+    print(f"ID del dron: {dron.get_id()}")
+    print(f"Posición del dron: {dron.get_position()}")
+    dron.send_update()
+    dron.set_id(5)
+    dron.send_update()
+    
+    # Enviar nuevamente la actualización
+    #dron.send_update()
+
 if __name__ == '__main__':
-    menu()
+    #menu()
+    main()

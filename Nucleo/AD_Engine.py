@@ -1,6 +1,6 @@
 import json
 import socket
-from kafka import KafkaConsumer, KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer
 
 
 
@@ -14,6 +14,7 @@ END_SHOW_TOPIC = 'end_show'
 HOST_BROKER = 'localhost'
 PORT_BROKER = 9092
 FILENAME_FIGURAS= 'AwD_figuras.json'
+FILENAME_ACTUALIZACIONES = 'last_updates.json'
 
 
 #################################################
@@ -54,39 +55,63 @@ def handle_connection(conn, addr):
 #################################################
 #Funciones para el Engine SHOW
 #################################################
+"""
+# Inicializar el producer de Kafka
+producer = KafkaProducer(bootstrap_servers='localhost:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
-# Crear el productor Kafka
-producer = KafkaProducer(
-    bootstrap_servers='localhost:9092',
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')
-)
+# Cargar el archivo JSON
+with open(FILENAME_FIGURAS, 'r') as file:
+    data = json.load(file)
 
-try:
-    # Leer el archivo JSON y obtener las instrucciones
-    with open(FILENAME_FIGURAS, 'r') as file:
-        data = json.load(file)
-        
-        for figura in data["figuras"]:
-            nombre_figura = figura["Nombre"]
-            for drone in figura["Drones"]:
-                drone_id = drone["ID"]
-                posicion = drone["POS"]
+# Suponiendo que <FIGURA> es una clave en el JSON
+figure_data = data['<FIGURA>']
 
-                # Formatear el mensaje como un diccionario
-                mensaje = {
-                    'figura': nombre_figura, 
-                    'posicion': posicion
-                }
+# Enviar los mensajes a Kafka
+for drone_info in figure_data:
+    message = {
+        'ID_DRON': drone_info['<ID_DRON>'],
+        'COORDENADAS': f"{drone_info['<COORDENADA_X_DESTINO>']},{drone_info['<COORDENADA_Y_DESTINO>']}"
+    }
+    producer.send('engine-to-drones', value=message)
 
-                # Publicar instrucciones en el tópico del dron específico
-                producer.send(f'drone-{drone_id}', mensaje)
+# Asegurarse de que todos los mensajes se envían
+producer.flush()
+producer.close()"""
 
-except Exception as e:
-    print(f"Ocurrió un error: {e}")
+#################################################
+#Funciones para escuhar los Drones
+#################################################
+def start_listening():
+    # Inicializar el consumidor de Kafka
+    consumer = KafkaConsumer(
+        'drons_to_engine',
+        group_id='engine',
+        bootstrap_servers='localhost:9092',
+        auto_offset_reset='earliest',
+        value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+    )
 
-finally:
-    # Cerrar el productor
-    producer.close()
+    for message in consumer:
+        process_message(message.value)
+        #limpiar el comsumidor
+        consumer.commit()
+
+def process_message(message):
+    # Extraer datos del mensaje
+    ID_DRON = message['ID_DRON']
+    COORDENADA_X_ACTUAL = message['COORDENADA_X_ACTUAL']
+    COORDENADA_Y_ACTUAL = message['COORDENADA_Y_ACTUAL']
+    ESTADO_ACTUAL = message['ESTADO_ACTUAL']
+
+    with open(FILENAME_ACTUALIZACIONES, 'w') as file:
+        json.dump(message,file)
+    
+    # Publicar el mensaje en pantalla
+    print("Mensaje recibido del dron con ID: {ID_DRON}")
+
+
+
+
 
 
 def start_engine():
@@ -95,20 +120,23 @@ def start_engine():
     # ... (código adicional para manejar el fichero y enviar instrucciones a drones)
 
 
-def main():
+"""def main():
     while True:
         choice = input("Select option (start/stop): ").lower()
         if choice == "start":
             start_engine()
         elif choice == "stop":
-            stop_engine()
+            #stop_engine()
             break
         else:
-            print("Invalid option. Please select 'start' or 'stop'.")
+            print("Invalid option. Please select 'start' or 'stop'.")"""
+
+#main de prueba
+def main():  
+    start_listening()
 
 if __name__ == "__main__":
     main()
-
 
 
 
