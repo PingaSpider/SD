@@ -1,14 +1,8 @@
 [
     {
-        "ID_DRON": 15,
-        "COORDENADA_X_ACTUAL": 23,
-        "COORDENADA_Y_ACTUAL": 33,
-        "ESTADO_ACTUAL": "waiting"
-    },
-    {
-        "ID_DRON": 89,
-        "COORDENADA_X_ACTUAL": 23,
-        "COORDENADA_Y_ACTUAL": 33,
-        "ESTADO_ACTUAL": "waiting"
+        "ID_DRON": 1,
+        "COORDENADA_X_ACTUAL": 9,
+        "COORDENADA_Y_ACTUAL": 11,
+        "ESTADO_ACTUAL": "MOVING"
     }
 ]
