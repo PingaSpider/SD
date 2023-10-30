@@ -55,28 +55,28 @@ def handle_connection(conn, addr):
 #################################################
 #Funciones para el Engine SHOW
 #################################################
-"""
 # Inicializar el producer de Kafka
-producer = KafkaProducer(bootstrap_servers='localhost:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+def start_show():
+    producer = KafkaProducer(bootstrap_servers='localhost:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
-# Cargar el archivo JSON
-with open(FILENAME_FIGURAS, 'r') as file:
-    data = json.load(file)
+    # Cargar el archivo JSON
+    with open(FILENAME_FIGURAS, 'r') as file:
+        data = json.load(file)
 
-# Suponiendo que <FIGURA> es una clave en el JSON
-figure_data = data['<FIGURA>']
+    # Suponiendo que <FIGURA> es una clave en el JSON
+    figure_data = data['<FIGURA>']
 
-# Enviar los mensajes a Kafka
-for drone_info in figure_data:
-    message = {
-        'ID_DRON': drone_info['<ID_DRON>'],
-        'COORDENADAS': f"{drone_info['<COORDENADA_X_DESTINO>']},{drone_info['<COORDENADA_Y_DESTINO>']}"
-    }
-    producer.send('engine-to-drones', value=message)
+    # Enviar los mensajes a Kafka
+    for drone_info in figure_data:
+        message = {
+            'ID_DRON': drone_info['<ID_DRON>'],
+            'COORDENADAS': f"{drone_info['<COORDENADA_X_DESTINO>']},{drone_info['<COORDENADA_Y_DESTINO>']}"
+        }
+        producer.send('engine-to-drones', value=message)
 
-# Asegurarse de que todos los mensajes se envían
-producer.flush()
-producer.close()"""
+    # Asegurarse de que todos los mensajes se envían
+    producer.flush()
+    producer.close()
 
 #################################################
 #Funciones para escuhar los Drones
@@ -96,18 +96,58 @@ def start_listening():
         #limpiar el comsumidor
         consumer.commit()
 
+#LISTO
+def load_last_updates():
+    try:
+        with open(FILENAME_ACTUALIZACIONES, 'r') as file:
+            data = json.load(file)
+            if isinstance(data, dict):  # Si es un diccionario, lo convierte en una lista
+                return [data]
+            else:
+                return data
+    except FileNotFoundError:
+        return []
+
+#LISTO
+def save_drones(drones):
+    with open(FILENAME_ACTUALIZACIONES, 'w') as file:
+        json.dump(drones, file, indent=4)
+
+#LISTO
 def process_message(message):
     # Extraer datos del mensaje
     ID_DRON = message['ID_DRON']
     COORDENADA_X_ACTUAL = message['COORDENADA_X_ACTUAL']
     COORDENADA_Y_ACTUAL = message['COORDENADA_Y_ACTUAL']
     ESTADO_ACTUAL = message['ESTADO_ACTUAL']
-
-    with open(FILENAME_ACTUALIZACIONES, 'w') as file:
-        json.dump(message,file)
     
+    drones = load_last_updates()
+    dron_found = False
+
     # Publicar el mensaje en pantalla
-    print("Mensaje recibido del dron con ID: {ID_DRON}")
+    print(f"Mensaje recibido del dron con ID: {ID_DRON}")
+
+    # Buscar si el dron ya está registrado y actualizar sus datos si es necesario
+    for dron in drones:
+        if dron["ID_DRON"] == ID_DRON:
+            dron["COORDENADA_X_ACTUAL"] = COORDENADA_X_ACTUAL
+            dron["COORDENADA_Y_ACTUAL"] = COORDENADA_Y_ACTUAL
+            dron["ESTADO_ACTUAL"] = ESTADO_ACTUAL
+            dron_found = True
+            print(f"Dron {ID_DRON} actualizado exitosamente.")
+            break  # Terminar el bucle una vez que se encuentra y actualiza el dron
+
+    # Si el dron no fue encontrado en la lista, añadirlo
+    if not dron_found:
+        drones.append({
+            "ID_DRON": ID_DRON,
+            "COORDENADA_X_ACTUAL": COORDENADA_X_ACTUAL,
+            "COORDENADA_Y_ACTUAL": COORDENADA_Y_ACTUAL,
+            "ESTADO_ACTUAL": ESTADO_ACTUAL
+        })
+        print(f"Nuevo dron registrado en el archivo de actualizaciones. ID: {ID_DRON}")
+
+    save_drones(drones)  # Guardar la lista actualizada de drones
 
 
 

@@ -1,1 +1,14 @@
-{"ID_DRON": 5, "COORDENADA_X_ACTUAL": 4, "COORDENADA_Y_ACTUAL": 5, "ESTADO_ACTUAL": "landed"}
+[
+    {
+        "ID_DRON": 15,
+        "COORDENADA_X_ACTUAL": 23,
+        "COORDENADA_Y_ACTUAL": 33,
+        "ESTADO_ACTUAL": "waiting"
+    },
+    {
+        "ID_DRON": 89,
+        "COORDENADA_X_ACTUAL": 23,
+        "COORDENADA_Y_ACTUAL": 33,
+        "ESTADO_ACTUAL": "waiting"
+    }
+]

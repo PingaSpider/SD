@@ -120,7 +120,7 @@ class Dron:
             process_message(message.value)
 
         
-
+#LISTO
 #################################################
 #Comunicacion del Dron con el Engine
 #################################################
@@ -176,27 +176,11 @@ def menu():
             print("Opcion invalida.")
 
 def main():
+    
+    # Crear un nuevo dron con un id aleatorio entre 1 y 100
     dron = Dron()
-    
-    # Imprime el ID y la posición del dron al inicio
-    print(f"ID del dron: {dron.get_id()}")
-    print(f"Posición del dron: {dron.get_position()}")
-    dron.send_update()
-    dron.set_id(3)
-    dron.send_update()
-    
-    # Enviar la actualización (si deseas ver el mensaje "Mensaje de Actualización enviado")
-    #dron.send_update()
-    
-    # Cambiar la posición del dron y el estado
-    dron.set_position((4,5))
-    dron.set_state(STATES[2])
-    
-    # Imprime el ID y la posición del dron después de cambiarla
-    print(f"ID del dron: {dron.get_id()}")
-    print(f"Posición del dron: {dron.get_position()}")
-    dron.send_update()
-    dron.set_id(5)
+    dron.set_id(89)
+    dron.set_position((23,33))
     dron.send_update()
     
     # Enviar nuevamente la actualización
