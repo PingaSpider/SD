@@ -21,7 +21,7 @@ PORT_BROKER = 9092
 
 # Estados posibles del dron
 STATES = ["WAITING", "MOVING", "LANDED"]
-
+COLORS = ["rojo", "verde"]
 class Dron:
     # Variable de clase para mantener el ID del próximo dron
     next_id = 1
@@ -33,6 +33,7 @@ class Dron:
         self.token = None  # Inicialmente, el dron no tiene un token hasta que se registre
         self.state = STATES[0] # Inicialmente, el dron está en estado "waiting"
         self.position = (1,1) # Inicialmente, el dron está en la posición (1,1)
+        self.color = COLORS[0] # Inicialmente, el dron está en estado "waiting"
     
     #Define el destructor del dron (no imprima nada en el destructor)
     def destroy(self):
@@ -95,13 +96,14 @@ class Dron:
 #Comunicacion del Engine con el Dron
 #################################################
 
+#LISTO
 # El dron necesita saber su propio ID para suscribirse al tópico correcto.
     def recive_data(self):
         try:
             # Inicializar el consumidor de Kafka
             consumer = KafkaConsumer(
                 'engine_to_drons',
-                group_id= "drons",
+                group_id=f"dron_group_{self.id}",
                 bootstrap_servers='localhost:9092',
                 auto_offset_reset='earliest',
                 value_deserializer=lambda x: json.loads(x.decode('utf-8'))
@@ -117,12 +119,12 @@ class Dron:
     # Función que procesa el mensaje y llama al método run
     def process_message(self,message):
         data = message.value
-        ID_DRON = data['ID_DRON']
-        COORDENADAS = data['COORDENADAS'].split(",")
-        COORDENADA_X_OBJETIVO = int(COORDENADAS[0])
-        COORDENADA_Y_OBJETIVO = int(COORDENADAS[1])
-        # Si el ID del dron en el mensaje coincide con el ID del dron actual, procesar el mensaje
-        if ID_DRON == self.id:
+        if data['ID_DRON'] == self.id:
+            ID_DRON = data['ID_DRON']
+            COORDENADAS = data['COORDENADAS'].split(",")
+            COORDENADA_X_OBJETIVO = int(COORDENADAS[0])
+            COORDENADA_Y_OBJETIVO = int(COORDENADAS[1])
+            # Si el ID del dron en el mensaje coincide con el ID del dron actual, procesar el mensaje
             self.run((COORDENADA_X_OBJETIVO, COORDENADA_Y_OBJETIVO))
     
     # Método para mover el dron un paso hacia el objetivo
@@ -158,10 +160,11 @@ class Dron:
             self.send_update()
 
             # Pausa de un segundo
-            time.sleep(2)
+            time.sleep(1)
         self.state = STATES[2]
+        self.color = COLORS[1]
+        self.send_update()
         self.send_confirmation()
-    
     def send_confirmation(self):
         producer = KafkaProducer(
             bootstrap_servers='localhost:9092',
@@ -170,7 +173,8 @@ class Dron:
         message = {
             'ID_DRON': self.id,
             'STATUS': self.state,
-            'COORDENADAS': f"{self.position[0]},{self.position[1]}"
+            'COORDENADAS': f"{self.position[0]},{self.position[1]}",
+            'COLOR': self.color       
         }
         producer.send('listen_confirmation', value=message)
         producer.close()  # Asegúrate de cerrar el productor cuando hayas terminado.
@@ -198,7 +202,8 @@ class Dron:
             'ID_DRON': self.id,
             'COORDENADA_X_ACTUAL': self.position[0],
             'COORDENADA_Y_ACTUAL': self.position[1],
-            'ESTADO_ACTUAL': self.state
+            'ESTADO_ACTUAL': self.state,
+            'COLOR': self.color
         }
         
         # Enviar el mensaje al tópico drones_to_engine
@@ -227,6 +232,8 @@ class Dron:
 
 
 
+
+
 def menu():
     dron = Dron()
     while True:
@@ -239,7 +246,9 @@ def menu():
         if opcion == 1:
             dron.register()
         elif opcion == 2:
-            dron.authenticate()
+            print("Selecciona un ID de dron entre 1 y 100: ")
+            dron.set_id(int(input()))
+            dron.run_dron()
         elif opcion == 3:
             # Comienza a escuchar en un hilo separado
             kafka_thread = threading.Thread(target=dron.listen)
@@ -253,10 +262,7 @@ def menu():
 def main():
     
     # Crear un nuevo dron con un id aleatorio entre 1 y 100
-    dron = Dron()
-    dron.run_dron()
-    dron.set_id(1)
-    dron.send_update()
+    menu()
     
     # Enviar nuevamente la actualización
     #dron.send_update()
