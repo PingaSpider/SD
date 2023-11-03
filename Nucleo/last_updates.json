@@ -1,50 +1,50 @@
 [
     {
         "ID_DRON": 1,
-        "COORDENADA_X_ACTUAL": 10,
-        "COORDENADA_Y_ACTUAL": 7,
-        "ESTADO_ACTUAL": "LANDED"
+        "COORDENADA_X_ACTUAL": 1,
+        "COORDENADA_Y_ACTUAL": 1,
+        "ESTADO_ACTUAL": "WAITING"
     },
     {
-        "ID_DRON": 2,
-        "COORDENADA_X_ACTUAL": 10,
-        "COORDENADA_Y_ACTUAL": 11,
+        "ID_DRON": 7,
+        "COORDENADA_X_ACTUAL": 12,
+        "COORDENADA_Y_ACTUAL": 9,
         "ESTADO_ACTUAL": "LANDED"
     },
     {
         "ID_DRON": 3,
+        "COORDENADA_X_ACTUAL": 8,
+        "COORDENADA_Y_ACTUAL": 9,
+        "ESTADO_ACTUAL": "LANDED"
+    },
+    {
+        "ID_DRON": 6,
         "COORDENADA_X_ACTUAL": 11,
-        "COORDENADA_Y_ACTUAL": 11,
-        "ESTADO_ACTUAL": "LANDED"
-    },
-    {
-        "ID_DRON": 4,
-        "COORDENADA_X_ACTUAL": 9,
-        "COORDENADA_Y_ACTUAL": 12,
-        "ESTADO_ACTUAL": "LANDED"
-    },
-    {
-        "ID_DRON": 5,
-        "COORDENADA_X_ACTUAL": 9,
-        "COORDENADA_Y_ACTUAL": 13,
-        "ESTADO_ACTUAL": "LANDED"
-    },
-    {
-        "ID_DRON": 7,
-        "COORDENADA_X_ACTUAL": 11,
-        "COORDENADA_Y_ACTUAL": 13,
+        "COORDENADA_Y_ACTUAL": 9,
         "ESTADO_ACTUAL": "LANDED"
     },
     {
         "ID_DRON": 8,
         "COORDENADA_X_ACTUAL": 11,
-        "COORDENADA_Y_ACTUAL": 12,
+        "COORDENADA_Y_ACTUAL": 8,
         "ESTADO_ACTUAL": "LANDED"
     },
     {
-        "ID_DRON": 6,
+        "ID_DRON": 2,
+        "COORDENADA_X_ACTUAL": 9,
+        "COORDENADA_Y_ACTUAL": 8,
+        "ESTADO_ACTUAL": "LANDED"
+    },
+    {
+        "ID_DRON": 4,
+        "COORDENADA_X_ACTUAL": 9,
+        "COORDENADA_Y_ACTUAL": 9,
+        "ESTADO_ACTUAL": "LANDED"
+    },
+    {
+        "ID_DRON": 5,
         "COORDENADA_X_ACTUAL": 10,
-        "COORDENADA_Y_ACTUAL": 13,
+        "COORDENADA_Y_ACTUAL": 9,
         "ESTADO_ACTUAL": "LANDED"
     }
 ]

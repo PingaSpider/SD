@@ -1,50 +1,63 @@
 import colorama
 
 class Mapa:
+
     def __init__(self, size=20):
         self.size = size
-        self.grid = [['.' for _ in range(size)] for _ in range(size)]
-        self.drones_positions = {}  # Nuevo diccionario para llevar el seguimiento de las posiciones de los drones
-        self.id_solapado_verde = {} # Nuevo diccionario para llevar el seguimiento de las posiciones de los drones
+        # Crear un mapa completamente en blanco primero
+        self.grid = [[' ' for _ in range(size)] for _ in range(size)]
+        
+        # Luego, establece los bordes con puntos
+        for i in range(size):
+            self.grid[i][0] = '.'
+            self.grid[i][size-1] = '.'
+            self.grid[0][i] = '.'
+            self.grid[size-1][i] = '.'
+        
+        self.drones_positions = {}  # Nuevo diccionario para llevar el seguimiento de las posiciones de los drones y su color
+        self.dron_solapado = {} #Nuevo diccionario para llevar el seguimiento de los drones que se encuentran en la misma posicion
 
-    def update_position(self,new_x, new_y,id, color):
-        # Cheque si la posición está dentro del mapa
+
+    def update_position(self, new_x, new_y, id, color):
+      
+        # Verifica si la posición está dentro del mapa
         if new_x < 0 or new_x >= self.size or new_y < 0 or new_y >= self.size:
             raise ValueError("Posición inválida")
-        # Chequea si el dron ya está en el mapa
-        if id not in self.drones_positions:
-            self.drones_positions[id] = (new_x, new_y)
-            # Actualiza con el color correspondiente
-            if color == "rojo":
-                self.grid[new_x][new_y] = f"{colorama.Back.RED}{colorama.Fore.WHITE}{id}{colorama.Style.RESET_ALL}"
-            elif color == "verde":
-                self.grid[new_x][new_y] = f"{colorama.Back.GREEN}{colorama.Fore.BLACK}{id}{colorama.Style.RESET_ALL}"
-            else:
-                self.grid[new_x][new_y] = id
-            return
-        # Borra la posición anterior del dron si existe
-        if id in self.drones_positions:
-            old_x, old_y = self.drones_positions[id]
-            self.grid[old_x][old_y] = '.'
-        # Chequea si hay un dron en la nueva posición y su color es verde   
-        if self.grid[new_x][new_y] != '.' and self.grid[new_x][new_y][0] == colorama.Back.GREEN:
-                #guardamo en variable global la id del dron que estaba en el diccionario de drones solapados
-                self.id_solapado[id] = self.grid[new_x][new_y]
-                # Actualiza a amarillo si hay un dron en la nueva posición
-                self.grid[new_x][new_y] = f"{colorama.Back.YELLOW}{colorama.Fore.BLACK}{id}{colorama.Style.RESET_ALL}"
-        
-        else:
-            # Actualiza con el color correspondiente
-            if color == "rojo":
-                self.grid[new_x][new_y] = f"{colorama.Back.RED}{colorama.Fore.WHITE}{id}{colorama.Style.RESET_ALL}"
-            elif color == "verde":
-                self.grid[new_x][new_y] = f"{colorama.Back.GREEN}{colorama.Fore.BLACK}{id}{colorama.Style.RESET_ALL}"
-            else:
-                self.grid[new_x][new_y] = id
 
-        # Actualiza el diccionario de posiciones de drones con la nueva posición
-        self.drones_positions[id] = (new_x, new_y)
+        # Verifica si el dron ya está en el mapa y obtiene su posición anterior
+        old_position = self.drones_positions.get(id)
+        if old_position:
+            old_x, old_y,_ = old_position
+            # Si había un dron solapado con diferente ID en la posición anterior, lo vuelve a colocar 
+            if (old_x, old_y) in self.dron_solapado:
+                overlapped_id = self.dron_solapado.pop((old_x, old_y))
+                if overlapped_id != id:
+                    overlapped_color = self.drones_positions[overlapped_id][2]  # Asumiendo que también guardamos el color aquí
+                    self.place_drone(old_x, old_y, overlapped_id, overlapped_color)
+            else:
+                # Limpia la posición anterior si no hay solapamiento
+                self.grid[old_x][old_y] = ' '
 
+        # Verifica si hay un dron solapado con diferente ID en la nueva posición
+        for other_id, (drone_x, drone_y, _) in self.drones_positions.items():
+            if drone_x == new_x and drone_y == new_y and other_id != id:
+                self.dron_solapado[(new_x, new_y)] = other_id
+
+
+        # Actualiza el diccionario de posiciones de drones con la nueva posición y color
+        self.drones_positions[id] = (new_x, new_y, color)
+
+
+        # Llama a place_drone para actualizar la posición visualmente
+        self.place_drone(new_x, new_y, id, color)
+
+    def place_drone(self, x, y, id, color):
+        # Coloca el dron en la posición especificada con el color correcto
+        color_code = colorama.Back.RED if color == "rojo" else colorama.Back.GREEN
+        text_color = colorama.Fore.WHITE if color == "rojo" else colorama.Fore.BLACK
+        self.grid[x][y] = f"{color_code}{text_color}{id}{colorama.Style.RESET_ALL}"
+    
+       
     def display(self):
         print()
         print()

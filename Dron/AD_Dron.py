@@ -152,11 +152,13 @@ class Dron:
     def run(self, target_position):
     # Moverse hacia la posición objetivo un paso a la vez
         self.state = STATES[1]
+        self.color = COLORS[0]
         while self.position != target_position:
             self.move_one_step(target_position)
             print(f"P:{self.position}, S: {self.state}, M: {target_position}")
             
             # Enviar una actualización al engine después de cada movimiento
+            time.sleep(0.5)
             self.send_update()
 
             # Pausa de un segundo
@@ -165,6 +167,8 @@ class Dron:
         self.color = COLORS[1]
         self.send_update()
         self.send_confirmation()
+    
+    # Método para enviar una confirmación al Engine
     def send_confirmation(self):
         producer = KafkaProducer(
             bootstrap_servers='localhost:9092',

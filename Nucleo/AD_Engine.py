@@ -8,6 +8,7 @@ from kafka import KafkaProducer, KafkaConsumer
 
 
 
+
 # Direcciones y puertos
 HOST = 'localhost'
 PORT = 5555
@@ -44,10 +45,10 @@ class Engine:
 
 
     def display_map(self):
-        while True: 
-            self.mapa.display()  # Suponiendo que tienes un método show() en la clase Mapa
+        while True:
+            self.mapa.display()
             time.sleep(1)
-    
+        
     def load_drones():
         try:
             with open(FILENAME_DRONES, 'r') as file:
@@ -192,7 +193,6 @@ class Engine:
                 dron["COORDENADA_Y_ACTUAL"] = COORDENADA_Y_ACTUAL
                 dron["ESTADO_ACTUAL"] = ESTADO_ACTUAL
                 dron_found = True
-                print(f"Dron {ID_DRON} actualizado exitosamente.")
                 #Terminar el bucle una vez que se actualiza el dron
                 break
 
@@ -209,7 +209,6 @@ class Engine:
 
         #Si el estado actual del dron es LANDED O FLYING, actualizar el mapa
         if ESTADO_ACTUAL == "MOVING" or ESTADO_ACTUAL == "LANDED":
-            print(f"El dron {ID_DRON} se está moviendo y actualizamos el mapa.")
             self.update_map(message)
 
 
@@ -222,16 +221,17 @@ class Engine:
             thread2 = threading.Thread(target=self.start_listening)
             thread3 = threading.Thread(target=self.listen_for_confirmations)
             thread4 = threading.Thread(target=self.display_map)
-
+        
+            thread4.start()
             thread1.start()
             thread2.start()
             thread3.start()
-            thread4.start()
 
+            thread4.join()
             thread1.join()
             thread2.join()
             thread3.join()
-            thread4.join()
+            
 
 
 #main de prueba
