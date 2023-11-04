@@ -20,6 +20,12 @@ HOST_BROKER = 'localhost'
 PORT_BROKER = 9092
 FILENAME_FIGURAS= 'AwD_figuras.json'
 FILENAME_ACTUALIZACIONES = 'last_updates.json'
+CLIMATE_SERVICE_HOST = 'localhost'
+CLIMATE_SERVICE_PORT = 7777
+TEMPERATURE_COMFORTABLE_LOW = 17
+TEMPERATURE_COMFORTABLE_HIGH = 25
+TEMPERATURE_COLD_LIMIT = 5
+TEMPERATURE_HOT_LIMIT = 38  
 
 
 #################################################
@@ -255,6 +261,46 @@ class Engine:
 
         self.save_drones(drones)  # Guardar la lista actualizada de drones
 
+    #LISTO
+    #################################################
+    #Comunicacion con el Servidor de Clima
+    #################################################
+    def get_weather(self, city):
+        # Comunicarse con el servicio de clima y obtener la temperatura
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((CLIMATE_SERVICE_HOST, CLIMATE_SERVICE_PORT))
+            s.sendall(city.encode())
+            data = s.recv(1024)
+            weather_data = json.loads(data.decode())
+            return weather_data
+
+    def perform_action_based_on_weather(self, city):
+        weather_data = self.get_weather(city)
+        temperature = weather_data["temperature"]
+        
+        if temperature != "Unknown":
+            print(f"La temperatura en {city} es de {temperature} grados.")
+            
+            # Si la temperatura está en el rango agradable, el show continúa.
+            if TEMPERATURE_COMFORTABLE_LOW <= temperature <= TEMPERATURE_COMFORTABLE_HIGH:
+                print("Las condiciones climáticas son agradables, el show continúa.")
+            # Si la temperatura es demasiado fría o demasiado caliente, se recomienda terminar el show.
+            elif temperature < TEMPERATURE_COLD_LIMIT or temperature > TEMPERATURE_HOT_LIMIT:
+                print("Advertencia: condiciones climáticas extremas detectadas.")
+                # Aquí enviaría la alerta al sistema relevante para tomar acción
+                # Por ejemplo, podría ser un método que envía un mensaje a otro componente
+                self.send_weather_alert(city, temperature)
+            else:
+                print("Las condiciones climáticas están fuera de lo ideal, pero no son extremas.")
+        else:
+            print("Datos del clima desconocidos.")
+
+    def send_weather_alert(self, city, temperature):
+        # Envía una alerta a un sistema o componente que maneja las operaciones del show
+        print(f"Alerta: Condiciones climáticas no adecuadas en {city}. Temperatura: {temperature} grados.")
+        # Aquí se podría implementar lógica para enviar una alerta real
+        # Por ejemplo, a través de un socket a otro sistema o usando otro mecanismo de comunicación
+
 
     def start_engine(self):
         # Iniciar los métodos en hilos separados
@@ -290,7 +336,7 @@ class Engine:
 
 #main de prueba
 def main():  
-    try:
+    """try:
         engine = Engine()
         engine.menu()
         # Otros llamados o lógica necesaria
@@ -299,7 +345,7 @@ def main():
         engine.stop_engine()  # Suponiendo que tienes un método para detener el motor
         # Aquí puedes realizar cualquier limpieza necesaria antes de cerrar el programa
     finally:
-        print("Programa terminado.")
+        print("Programa terminado.")"""
 
 
 if __name__ == "__main__":
