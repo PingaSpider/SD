@@ -27,16 +27,16 @@ class Mapa:
         # Verifica si el dron ya está en el mapa y obtiene su posición anterior
         old_position = self.drones_positions.get(id)
         if old_position:
-            old_x, old_y,_ = old_position
+            old_y, old_x,_ = old_position
             # Si había un dron solapado con diferente ID en la posición anterior, lo vuelve a colocar 
             if (old_x, old_y) in self.dron_solapado:
-                overlapped_id = self.dron_solapado.pop((old_x, old_y))
+                overlapped_id = self.dron_solapado.pop((old_y, old_x))
                 if overlapped_id != id:
                     overlapped_color = self.drones_positions[overlapped_id][2]  # Asumiendo que también guardamos el color aquí
-                    self.place_drone(old_x, old_y, overlapped_id, overlapped_color)
+                    self.place_drone(old_y, old_x, overlapped_id, overlapped_color)
             else:
                 # Limpia la posición anterior si no hay solapamiento
-                self.grid[old_x][old_y] = ' '
+                self.grid[old_y][old_x] = ' '
 
         # Verifica si hay un dron solapado con diferente ID en la nueva posición
         for other_id, (drone_x, drone_y, _) in self.drones_positions.items():
@@ -45,17 +45,17 @@ class Mapa:
 
 
         # Actualiza el diccionario de posiciones de drones con la nueva posición y color
-        self.drones_positions[id] = (new_x, new_y, color)
+        self.drones_positions[id] = (new_y, new_x, color)
 
 
         # Llama a place_drone para actualizar la posición visualmente
-        self.place_drone(new_x, new_y, id, color)
+        self.place_drone(new_y, new_x, id, color)
 
     def place_drone(self, x, y, id, color):
         # Coloca el dron en la posición especificada con el color correcto
         color_code = colorama.Back.RED if color == "rojo" else colorama.Back.GREEN
         text_color = colorama.Fore.WHITE if color == "rojo" else colorama.Fore.BLACK
-        self.grid[x][y] = f"{color_code}{text_color}{id}{colorama.Style.RESET_ALL}"
+        self.grid[y][x] = f"{color_code}{text_color}{id}{colorama.Style.RESET_ALL}"
     
        
     def display(self):
@@ -66,21 +66,6 @@ class Mapa:
             print(' '.join(str(item) for item in row))
         print()
 
-def main():
-    
-    # Inicializar la biblioteca colorama
-    colorama.init(autoreset=True)
-
-    # Ejemplo de uso:
-    mapa = Mapa()
-    mapa.update_position(1, 1,'A',  'rojo')
-    mapa.update_position(2, 2,'B',  'verde')
-    mapa.update_position( 1, 1,'C', 'verde')  # Esto hará que la posición (1,1) tenga un fondo azul
-    mapa.update_position( 3, 3,'A', 'rojo')  # Mover el dron 'A' a una nueva posición y limpiar la antigua
-    mapa.display()
-
-if __name__ == '__main__':
-    main()
 
 
 

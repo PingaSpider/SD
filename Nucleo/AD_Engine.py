@@ -37,6 +37,7 @@ class Engine:
     def __init__(self):
         self.confirmed_drones = set()
         self.mapa = Mapa()
+        self.city = None
 
     
     def update_map(self, message):
@@ -157,9 +158,10 @@ class Engine:
                 while not self.all_drones_confirmed(drones_needed):
                     time.sleep(1)  # espera un segundo y vuelve a verificar
                     print("Esperando confirmaciones...")
-
                 # Una vez que todos los drones han confirmado, limpia el conjunto para la siguiente figura
                 self.confirmed_drones.clear()
+                print("Todos los drones han confirmado.")
+                time.sleep(5)  # Espera un segundo antes de enviar la siguiente figura
 
         except Exception as e:
             print(f"Error: {e}")
@@ -301,23 +303,52 @@ class Engine:
         # Aquí se podría implementar lógica para enviar una alerta real
         # Por ejemplo, a través de un socket a otro sistema o usando otro mecanismo de comunicación
 
+    def check_weather_periodically(self, city):
+        """Función que chequea el clima cada 10 segundos."""
+        while True:
+            # Aquí iría la lógica para chequear el clima
+            print(f"Chequeando el clima para la ciudad: {city}")
+            self.perform_action_based_on_weather(city)
+            time.sleep(10)
 
+    #LISTO
     def start_engine(self):
         # Iniciar los métodos en hilos separados
-            thread1 = threading.Thread(target=self.start_show)
-            thread2 = threading.Thread(target=self.start_listening)
-            thread3 = threading.Thread(target=self.listen_for_confirmations)
-            thread4 = threading.Thread(target=self.display_map)
-        
-            thread4.start()
-            thread1.start()
-            thread2.start()
-            thread3.start()
 
-            thread4.join()
-            thread1.join()
-            thread2.join()
-            thread3.join()
+            # Asegúrate de obtener la ciudad antes de iniciar el hilo meter en self.ciudad
+            self.city = input("Ingrese la ciudad: ")
+
+
+
+            show_thread = threading.Thread(target=self.start_show)
+            dron_update = threading.Thread(target=self.start_listening)
+            dron_landed_confirmation = threading.Thread(target=self.listen_for_confirmations)
+            map_display = threading.Thread(target=self.display_map)
+            weather_thread = threading.Thread(target=self.check_weather_periodically, args=(self.city,))
+
+            # Esto asegura que el hilo se cierra cuando el programa principal termina.
+            show_thread.daemon = True
+            dron_update.daemon = True
+            dron_landed_confirmation.daemon = True
+            map_display.daemon = True
+            weather_thread.daemon = True  
+        
+            show_thread.start()
+            dron_update.start()
+            map_display.start()
+            dron_landed_confirmation.start()
+            weather_thread.start()
+
+            
+
+            show_thread.join()
+            dron_update.join()
+            dron_landed_confirmation.join()
+            map_display.join()
+            weather_thread.join()
+    
+
+            
             
     def menu(self):
         print("Bienvenido al motor de la aplicación")
@@ -326,7 +357,7 @@ class Engine:
         print("2. Salir")
         option = input("Ingrese la opción: ")
         if option == "1":
-            self.autenticate()
+            self.start_engine()
         elif option == "2":
             print("Saliendo del motor...")
             exit()
@@ -336,7 +367,7 @@ class Engine:
 
 #main de prueba
 def main():  
-    """try:
+    try:
         engine = Engine()
         engine.menu()
         # Otros llamados o lógica necesaria
@@ -345,7 +376,7 @@ def main():
         engine.stop_engine()  # Suponiendo que tienes un método para detener el motor
         # Aquí puedes realizar cualquier limpieza necesaria antes de cerrar el programa
     finally:
-        print("Programa terminado.")"""
+        print("Programa terminado.")
 
 
 if __name__ == "__main__":
