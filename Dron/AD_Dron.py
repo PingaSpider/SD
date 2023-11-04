@@ -63,7 +63,9 @@ class Dron:
     
     def set_position(self, position):
         self.position = position
-    
+
+    #LISTO
+    # Método para registrar el dron en el Registry
     def register(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((HOST_REGISTRY, PORT_REGISTRY))
@@ -87,6 +89,31 @@ class Dron:
                     else:
                         print(f"Error al registrar el Dron {self.id}.")
                         return False
+            except json.JSONDecodeError:  # Si hay un error al decodificar el JSON, manejarlo
+                print("Respuesta del Registry no es un JSON válido.")
+                return False
+
+    #Metodo para autenticar el dron con el Engine (usar el token) y
+    def autenticate(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((HOST_ENGINE, PORT_ENGINE))
+            reg_msg = {'id': self.id, 'token': self.token}
+            s.sendall(json.dumps(reg_msg).encode())
+            
+            data = s.recv(1024)
+            if not data:  # Si no se recibe respuesta, imprimir un error y retornar False
+                print("No se recibió respuesta del Engine.")
+                return False
+            
+            try:
+                response = json.loads(data.decode())
+                if response['status'] == 'success':
+                    print(f"Autenticado exitosamente")
+                    return True
+                else:
+                    print(f"Error al Autenticar.")
+                    return False
+                
             except json.JSONDecodeError:  # Si hay un error al decodificar el JSON, manejarlo
                 print("Respuesta del Registry no es un JSON válido.")
                 return False
@@ -168,24 +195,8 @@ class Dron:
         self.send_update()
         self.send_confirmation()
     
-    # Método para enviar una confirmación al Engine
-    def send_confirmation(self):
-        producer = KafkaProducer(
-            bootstrap_servers='localhost:9092',
-            value_serializer=lambda v: json.dumps(v).encode('utf-8')
-        )
-        message = {
-            'ID_DRON': self.id,
-            'STATUS': self.state,
-            'COORDENADAS': f"{self.position[0]},{self.position[1]}",
-            'COLOR': self.color       
-        }
-        producer.send('listen_confirmation', value=message)
-        producer.close()  # Asegúrate de cerrar el productor cuando hayas terminado.
 
-        print(f"SEND_CONFIRMATION: {self.state}")
-
-
+#################################################
 
 
         
@@ -219,7 +230,24 @@ class Dron:
         
         # Emitir el mensaje en pantalla
         print("SEND_UPDATE ID de Dron: ", self.id)
+    
+    # Método para enviar una confirmación al Engine
+    def send_confirmation(self):
+        producer = KafkaProducer(
+            bootstrap_servers='localhost:9092',
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+        message = {
+            'ID_DRON': self.id,
+            'STATUS': self.state,
+            'COORDENADAS': f"{self.position[0]},{self.position[1]}",
+            'COLOR': self.color       
+        }
+        producer.send('listen_confirmation', value=message)
+        producer.close()  # Asegúrate de cerrar el productor cuando hayas terminado.
 
+        print(f"SEND_CONFIRMATION: {self.state}")
+####################################################################
     def run_dron(self):
         # Iniciar los métodos en hilos separados
         thread1 = threading.Thread(target=self.recive_data)
@@ -240,7 +268,12 @@ class Dron:
 
 def menu():
     dron = Dron()
+    print("Selecciona un ID de dron entre 1 y 100: ")
+    dron.set_id(int(input()))
     while True:
+        print()
+        print()
+        print("Seleccione una opcion:")
         print("1. Registrar el dron en el Registry")
         print("2. Autenticar el dron con el Engine")
         print("3. Comenzar a escuchar instrucciones")
@@ -250,13 +283,9 @@ def menu():
         if opcion == 1:
             dron.register()
         elif opcion == 2:
-            print("Selecciona un ID de dron entre 1 y 100: ")
-            dron.set_id(int(input()))
-            dron.run_dron()
+            dron.autenticate()
         elif opcion == 3:
-            # Comienza a escuchar en un hilo separado
-            kafka_thread = threading.Thread(target=dron.listen)
-            kafka_thread.start()
+            dron.run_dron()        
         elif opcion == 4:
             print("Saliendo del programa.")
             break  # Esto terminará el bucle while

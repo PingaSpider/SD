@@ -47,31 +47,48 @@ class Engine:
     def display_map(self):
         while True:
             self.mapa.display()
-            time.sleep(1)
+            time.sleep(0.5)
         
-    def load_drones():
+    
+    def load_drones(self):
         try:
             with open(FILENAME_DRONES, 'r') as file:
                 return json.load(file)
         except FileNotFoundError:
             return []
+    
 
+    def wrap_coordinates(self, x, y):
+        """Envuelve las coordenadas según la geometría esférica del mapa."""
+        #Si la coordenada x es 0 se envuelve a la derecha
+        # Si la coordenada x es 20 se envuelve a la izquierda
+        # Si la coordenada y es 0 se envuelve hacia abajo
+        # Si la coordenada y es 20 se envuelve hacia arriba
+        if x == 0:
+            x = self.mapa.size - 2
+        elif x == self.mapa.size - 1:
+            x = 1
+        if y == 0:
+            y = self.mapa.size - 2
+        elif y == self.mapa.size - 1:
+            y = 1
+        return x, y
 
-    drones_registered = load_drones()
-
-    def handle_connection(conn, addr):
+    def handle_connection(self,conn, addr):
         print("Conectado por", addr)
         data = conn.recv(1024).decode()
         drone_data = json.loads(data)
         id_dron = drone_data["id"]
         token = drone_data["token"]
-        
-        response = {"status": "error", "message": "Dron no registrado"}  # Inicializa la respuesta como error
+        drones_registered = self.load_drones()
+
+        # Inicializar la variable response por adelantado
+        response = {"status": "error", "message": "Dron no autenticado"}
         
         for dron in drones_registered:
             if dron["id"] == id_dron:
                 if dron["token"] == token:
-                    print(f"Dron {token} autenticado exitosamente.")
+                    print(f"Dron {id_dron} autenticado exitosamente.")
                     response = {"status": "success", "message": "Autenticado"}
                     break  # Termina el bucle una vez que se autentica el dron
                 else:
@@ -79,8 +96,22 @@ class Engine:
                     print(f"Token incorrecto.")
                     break  # Termina el bucle si el token es incorrecto
         
-        conn.sendall(json.dumps(response).encode())  # Envía la respuesta después de recorrer la lista de drones
+        conn.sendall(json.dumps(response).encode())  # Envía la respuesta después de recorrer la lista de drones       
 
+    
+    def autenticate(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT))
+            s.listen()
+            print("Engine escuchando en", PORT)
+            
+            while True:  # Mantener el Registry escuchando indefinidamente
+                conn, addr = s.accept()
+                with conn:
+                    self.handle_connection(conn, addr)
+
+
+    #LISTO
     #################################################
     #Funciones para el Engine SHOW
     #################################################
@@ -101,6 +132,15 @@ class Engine:
                 #saber la cantidad de drones que se necesitan para la figura y guardarla en una variable
                 drones_needed = len(figure['Drones'])
                 for drone_info in figure['Drones']:
+                    x_str, y_str = drone_info['POS'].split(',')
+                    x = int(x_str)
+                    y = int(y_str)
+                    
+                    # Usando wrap_coordinates para ajustar las coordenadas
+                    x, y = self.wrap_coordinates(x, y)
+                    
+                    # Actualizar la posición en el drone_info
+                    drone_info['POS'] = f"{x},{y}"
                     message = {
                         'ID_DRON': drone_info['ID'],
                         'COORDENADAS': drone_info['POS']
@@ -139,7 +179,8 @@ class Engine:
         
         consumer.commit()
         consumer.close()
-           
+
+    #LISTO    
     #################################################
     #Funciones para escuhar los Drones
     #################################################
@@ -232,13 +273,26 @@ class Engine:
             thread2.join()
             thread3.join()
             
-
+    def menu(self):
+        print("Bienvenido al motor de la aplicación")
+        print("Seleccione una opción: ")
+        print("1. Iniciar el motor")
+        print("2. Salir")
+        option = input("Ingrese la opción: ")
+        if option == "1":
+            self.autenticate()
+        elif option == "2":
+            print("Saliendo del motor...")
+            exit()
+        else:
+            print("Opción inválida")
+            self.menu()
 
 #main de prueba
 def main():  
     try:
         engine = Engine()
-        engine.start_engine()
+        engine.menu()
         # Otros llamados o lógica necesaria
     except KeyboardInterrupt:
         print("Deteniendo el motor y limpiando...")

@@ -65,30 +65,29 @@ def get_token_for_dron(dron_id):
     
     return new_token
 
-def register_dron(dron_id):
+def non_register_dron(dron_id):
     drones = load_drones()
-    if dron_id not in drones:
-        return True
-    return False
+    for dron in drones:
+        if dron["id"] == dron_id:
+            return False
+    return True
 
 def handle_connection(conn, addr):
     print("Conectado por", addr)
     
     # Recibe el ID del dron desde la conexión
-    id_dron = conn.recv(1024).decode()
-    
-    # Obtiene el token asociado al ID del dron
-    token = get_token_for_dron(id_dron)
+    data = conn.recv(1024).decode()
+    drone_data = json.loads(data)
+    id_dron = drone_data["id"]
     
     # Verifica si el dron ya está registrado
-    if token is not None:
-        print(f"Dron {token} ya estaba registrado.")
-        response = {"status": "error", "message": "Ya registrado"}
-    else:
-        # Registra el dron y obtiene un nuevo token
-        new_token = register_dron(id_dron)
+    if non_register_dron(id_dron):
+        new_token = get_token_for_dron(id_dron)
         print(f"Dron {new_token} registrado exitosamente.")
         response = {"status": "success", "token": new_token, "message": "Registrado"}
+    else:
+        print(f"Dron {id_dron} ya estaba registrado.")
+        response = {"status": "error", "message": "Ya registrado"}
     
     # Envía la respuesta al dron
     conn.sendall(json.dumps(response).encode())
