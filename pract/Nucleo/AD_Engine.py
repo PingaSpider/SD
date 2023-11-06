@@ -5,7 +5,6 @@ import threading
 import os
 from Mapa import Mapa
 from kafka import KafkaProducer, KafkaConsumer
-import sys
 
 
 
@@ -27,6 +26,12 @@ TEMPERATURE_COMFORTABLE_LOW = 17
 TEMPERATURE_COMFORTABLE_HIGH = 25
 TEMPERATURE_COLD_LIMIT = 5
 TEMPERATURE_HOT_LIMIT = 38  
+SHOW_THREAD = None
+DRON_UPDATE = None
+MAP_DISPLAY = None
+DRON_LANDED_CONFIRMATION = None
+WEATHER_THREAD = None
+END_SHOW_THREAD = None
 
 
 #################################################
@@ -36,19 +41,22 @@ TEMPERATURE_HOT_LIMIT = 38
 class Engine:
 
     def __init__(self):
-        # Inicializar variables
-
-        self.shutdown_signal = threading.Event() # Señal para apagar los hilos
         self.confirmed_drones = set()
         self.mapa = Mapa()
         self.city = None
         self.weather = True
-        self.threads = []
 
     def restart(self):
         self.mapa.destroy()
         self.mapa = None
+        self.city = None
         self.weather = True
+        SHOW_THREAD.stop()
+        DRON_UPDATE.stop()
+        MAP_DISPLAY.stop()
+        DRON_LANDED_CONFIRMATION.stop()
+        WEATHER_THREAD.stop()
+        END_SHOW_THREAD.stop()
 
     
     def update_map(self, message):
@@ -210,15 +218,11 @@ class Engine:
     def backToBase(self):
         #Contar todos los drones que estan en el show
         drones_needed = len(self.confirmed_drones)
-        self.confirmed_drones.clear()
         while not self.all_drones_confirmed(drones_needed):
             time.sleep(1)  # espera un segundo y vuelve a verificar  
             print("Esperando confirmaciones de vuelta a base...")
-        # Una vez que todos los drones han confirmado, limpia el conjunto para la siguiente figura
-        self.confirmed_drones.clear()
-        print("Todos los drones han confirmado vuelta a base.")
-        return True
-        
+        #Terminar la ejecucion del Engine
+        os._exit(0)
         
 
     #LISTO    
@@ -301,7 +305,6 @@ class Engine:
     #Comunicacion con el Servidor de Clima
     #################################################
     def get_weather(self, city):
-    
         # Comunicarse con el servicio de clima y obtener la temperatura
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((CLIMATE_SERVICE_HOST, CLIMATE_SERVICE_PORT))
@@ -309,7 +312,6 @@ class Engine:
             data = s.recv(1024)
             weather_data = json.loads(data.decode())
             return weather_data
-       
 
     def perform_action_based_on_weather(self, city):
         weather_data = self.get_weather(city)
@@ -334,8 +336,8 @@ class Engine:
         # Envía una alerta a un sistema o componente que maneja las operaciones del show
         print(f"Alerta: Condiciones climáticas no adecuadas en {city}. Temperatura: {temperature} grados.")
         print("Enviando alerta al sistema de operaciones del show...")
-        self.weather = False
         self.end_show()
+        self.weather = False
 
     def check_weather_periodically(self, city):
         """Función que chequea el clima cada 10 segundos."""
@@ -359,67 +361,40 @@ class Engine:
             producer.flush()
             producer.close()
             print("Show terminado.")
-
-        # Drones deben volver a base
-        print("Drones volviendo a base...")
-        if self.backToBase():
-                self.stop_engine()
-                print("Engine detenido.")
-                self.restart()
-                print("Engine reiniciado.")
-            
         
     
     #LISTO
     def start_engine(self):
         # Iniciar los métodos en hilos separados
 
-        # Asegúrate de obtener la ciudad antes de iniciar el hilo meter en self.ciudad
-        self.city = input("Ingrese la ciudad: ")
-
-        # Inicializar y comenzar los hilos aquí
-        show_thread = threading.Thread(target=self.start_show)
-        self.threads.append(show_thread)
-        show_thread.start()
-
-        dron_update = threading.Thread(target=self.start_listening)
-        self.threads.append(dron_update)
-        dron_update.start()
-
-        map_display = threading.Thread(target=self.display_map)
-        self.threads.append(map_display)
-        map_display.start()
-
-        dron_landed_confirmation = threading.Thread(target=self.listen_for_confirmations)
-        self.threads.append(dron_landed_confirmation)
-        dron_landed_confirmation.start()
-
-        weather_thread = threading.Thread(target=self.check_weather_periodically, args=(self.city,))
-        self.threads.append(weather_thread)
-        weather_thread.start()
-
-        end_show_thread = threading.Thread(target=self.end_show)
-        self.threads.append(end_show_thread)
-        end_show_thread.start()
-
-        # Iniciar el hilo de autenticación
-        auth_thread = threading.Thread(target=self.autenticate)
-        self.threads.append(auth_thread)
-        auth_thread.start()
-
-    #LISTO
+            # Asegúrate de obtener la ciudad antes de iniciar el hilo meter en self.ciudad
+            self.city = input("Ingrese la ciudad: ")
 
 
 
-    def stop_engine(self):
-        self.shutdown_signal.set()  # Establecer la señal de apagado
+            SHOW_THREAD = threading.Thread(target=self.start_show)
+            DRON_UPDATE = threading.Thread(target=self.start_listening)
+            MAP_DISPLAY = threading.Thread(target=self.display_map)
+            DRON_LANDED_CONFIRMATION = threading.Thread(target=self.listen_for_confirmations)
+            WEATHER_THREAD = threading.Thread(target=self.check_weather_periodically, args=(self.city,))
+            END_SHOW_THREAD = threading.Thread(target=self.end_show)
+            
 
-        # Esperar a que todos los hilos terminen
-        for thread in self.threads:
-            thread.join()
+            SHOW_THREAD.start()
+            DRON_UPDATE.start()
+            MAP_DISPLAY.start()
+            DRON_LANDED_CONFIRMATION.start()
+            WEATHER_THREAD.start()
+            END_SHOW_THREAD.start()
 
-        print("Todos los hilos han sido detenidos correctamente.")
-
+            SHOW_THREAD.join()
+            DRON_UPDATE.join()
+            MAP_DISPLAY.join()
+            DRON_LANDED_CONFIRMATION.join()
+            WEATHER_THREAD.join()
+            END_SHOW_THREAD.join()
+            
+    
 
             
             
@@ -446,7 +421,10 @@ def main():
         # Otros llamados o lógica necesaria
     except KeyboardInterrupt:
         print("Deteniendo el motor y limpiando...")
-        engine.end_show()
+        engine.stop_engine()  # Suponiendo que tienes un método para detener el motor
+        # Aquí puedes realizar cualquier limpieza necesaria antes de cerrar el programa
+    finally:
+        print("Programa terminado.")
 
 
 if __name__ == "__main__":

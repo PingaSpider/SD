@@ -1,50 +1,8 @@
 [
     {
         "ID_DRON": 1,
-        "COORDENADA_X_ACTUAL": 5,
-        "COORDENADA_Y_ACTUAL": 12,
-        "ESTADO_ACTUAL": "MOVING"
-    },
-    {
-        "ID_DRON": 2,
-        "COORDENADA_X_ACTUAL": 5,
-        "COORDENADA_Y_ACTUAL": 18,
-        "ESTADO_ACTUAL": "MOVING"
-    },
-    {
-        "ID_DRON": 6,
-        "COORDENADA_X_ACTUAL": 10,
-        "COORDENADA_Y_ACTUAL": 17,
-        "ESTADO_ACTUAL": "MOVING"
-    },
-    {
-        "ID_DRON": 4,
-        "COORDENADA_X_ACTUAL": 11,
-        "COORDENADA_Y_ACTUAL": 18,
-        "ESTADO_ACTUAL": "MOVING"
-    },
-    {
-        "ID_DRON": 5,
-        "COORDENADA_X_ACTUAL": 10,
-        "COORDENADA_Y_ACTUAL": 12,
-        "ESTADO_ACTUAL": "MOVING"
-    },
-    {
-        "ID_DRON": 7,
-        "COORDENADA_X_ACTUAL": 9,
-        "COORDENADA_Y_ACTUAL": 14,
-        "ESTADO_ACTUAL": "MOVING"
-    },
-    {
-        "ID_DRON": 8,
-        "COORDENADA_X_ACTUAL": 9,
-        "COORDENADA_Y_ACTUAL": 19,
-        "ESTADO_ACTUAL": "MOVING"
-    },
-    {
-        "ID_DRON": 3,
-        "COORDENADA_X_ACTUAL": 10,
-        "COORDENADA_Y_ACTUAL": 12,
-        "ESTADO_ACTUAL": "MOVING"
+        "COORDENADA_X_ACTUAL": 1,
+        "COORDENADA_Y_ACTUAL": 1,
+        "ESTADO_ACTUAL": "LANDED"
     }
 ]

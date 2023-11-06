@@ -91,35 +91,30 @@ class Dron:
                 print("Respuesta del Registry no es un JSON válido.")
                 return False
 
-
     #Metodo para autenticar el dron con el Engine (usar el token) y
     def autenticate(self):
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((HOST_ENGINE, PORT_ENGINE))
-                reg_msg = {'id': self.id, 'token': self.token}
-                s.sendall(json.dumps(reg_msg).encode())
-                
-                data = s.recv(1024)
-                if not data:  # Si no se recibe respuesta, imprimir un error y retornar False
-                    print("No se recibió respuesta del Engine.")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((HOST_ENGINE, PORT_ENGINE))
+            reg_msg = {'id': self.id, 'token': self.token}
+            s.sendall(json.dumps(reg_msg).encode())
+            
+            data = s.recv(1024)
+            if not data:  # Si no se recibe respuesta, imprimir un error y retornar False
+                print("No se recibió respuesta del Engine.")
+                return False
+            
+            try:
+                response = json.loads(data.decode())
+                if response['status'] == 'success':
+                    print(f"Autenticado exitosamente")
+                    return True
+                else:
+                    print(f"Error al Autenticar.")
                     return False
                 
-                try:
-                    response = json.loads(data.decode())
-                    if response['status'] == 'success':
-                        print(f"Autenticado exitosamente")
-                        return True
-                    else:
-                        print(f"Error al Autenticar.")
-                        return False
-                    
-                except json.JSONDecodeError:  # Si hay un error al decodificar el JSON, manejarlo
-                    print("Respuesta del Registry no es un JSON válido.")
-                    return False
-        except Exception as e:
-            print(f"Error en la conexión con el Engine: {e}")
-            return False
+            except json.JSONDecodeError:  # Si hay un error al decodificar el JSON, manejarlo
+                print("Respuesta del Registry no es un JSON válido.")
+                return False
 
 
 #################################################
@@ -205,12 +200,12 @@ class Dron:
         self.send_confirmation()
     
     def backTobase(self):
-        self.state = STATES[1]
         self.showState = True
-        self.run((1, 1))  # Corregido aquí
+        self.run(1,1)
         print("BACK TO BASE")
-        self.showState = True
-        self.state = STATES[0]
+        #volver al Menu
+        menu()
+
         
     
     def endShow(self):
@@ -228,16 +223,13 @@ class Dron:
             # message = {'END_SHOW': 'True'}
             if data['END_SHOW'] == 'True':
                 self.showState = False
-                self.backTobase()
-                print("ENDING SHOW")
+                print("END SHOW")
                 break
             consumer.commit()
         consumer.close()
-
         print("SHOW END")
-
-        #Volver al menu
-        self.menu()
+        if self.state == "LANDED":
+            self.backTobase()
 
     
 
@@ -314,37 +306,36 @@ class Dron:
 
 
 
-    def menu(self):
-
-        while True:
-            print()
-            print()
-            print("Seleccione una opcion:")
-            print("1. Registrar el dron en el Registry")
-            print("2. Autenticar el dron con el Engine")
-            print("3. Comenzar a escuchar instrucciones")
-            print("4. Salir")
-            opcion = int(input("Seleccione una opcion: "))
-
-            if opcion == 1:
-                self.register()
-            elif opcion == 2:
-                self.autenticate()
-            elif opcion == 3:
-                self.run_dron()        
-            elif opcion == 4:
-                print("Saliendo del programa.")
-                #salir del programa
-                exit()
-            else:
-                print("Opcion invalida.")
-
-def main():
+def menu():
     dron = Dron()
     print("Selecciona un ID de dron entre 1 y 100: ")
     dron.set_id(int(input()))
+    while True:
+        print()
+        print()
+        print("Seleccione una opcion:")
+        print("1. Registrar el dron en el Registry")
+        print("2. Autenticar el dron con el Engine")
+        print("3. Comenzar a escuchar instrucciones")
+        print("4. Salir")
+        opcion = int(input("Seleccione una opcion: "))
+
+        if opcion == 1:
+            dron.register()
+        elif opcion == 2:
+            dron.autenticate()
+        elif opcion == 3:
+            dron.run_dron()        
+        elif opcion == 4:
+            print("Saliendo del programa.")
+            break  # Esto terminará el bucle while
+        else:
+            print("Opcion invalida.")
+
+def main():
+    
     # Crear un nuevo dron con un id aleatorio entre 1 y 100
-    dron.menu()
+    menu()
     
     # Enviar nuevamente la actualización
     #dron.send_update()
