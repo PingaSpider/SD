@@ -83,6 +83,7 @@ class Dron:
                     return True
                 else:
                     if response['message'] == 'Ya registrado':
+                        self.token = response['token']
                         print(f"Dron {self.id} ya estaba registrado.")
                     else:
                         print(f"Error al registrar el Dron {self.id}.")

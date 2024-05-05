@@ -86,8 +86,10 @@ def handle_connection(conn, addr):
         print(f"Dron {new_token} registrado exitosamente.")
         response = {"status": "success", "token": new_token, "message": "Registrado"}
     else:
-        print(f"Dron {id_dron} ya estaba registrado.")
-        response = {"status": "error", "message": "Ya registrado"}
+        #Devolvemos el token del dron y un mensaje de error
+        token = get_token_for_dron(id_dron)
+        print(f"Dron {token} ya registrado.")
+        response = {"status": "error", "token": token, "message": "Ya registrado"}
     
     # Envía la respuesta al dron
     conn.sendall(json.dumps(response).encode())

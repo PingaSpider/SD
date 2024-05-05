@@ -1,6 +1,6 @@
 [
-    {"city": "Madrid", "temperature": 54},
-    {"city": "Valencia", "temperature": 45},
+    {"city": "Madrid", "temperature": 23},
+    {"city": "Valencia", "temperature": 25},
     {"city": "Sevilla", "temperature": 27},
     {"city": "Málaga", "temperature": 24},
     {"city": "Granada", "temperature": 52},

@@ -48,10 +48,21 @@ class Mapa:
         self.place_drone(new_x, new_y, id, color)
 
     def place_drone(self, x, y, id, color):
-        # Coloca el dron en la posición especificada con el color correcto
+        # Convertir el ID a una cadena de dos caracteres, rellenando con un espacio a la izquierda si es necesario
+        id_str = f"{id:2}"
+
+        # Aplicar los códigos de color de colorama
         color_code = colorama.Back.RED if color == "rojo" else colorama.Back.GREEN
         text_color = colorama.Fore.WHITE if color == "rojo" else colorama.Fore.BLACK
-        self.grid[y][x] = f"{color_code}{text_color}{id}{colorama.Style.RESET_ALL}"  # Cambia a [y][x]
+
+        # Construir la representación del dron con el color y asegurarse de que todo sea de ancho fijo
+        drone_representation = f"{color_code}{text_color}{id_str}{colorama.Style.RESET_ALL}"
+
+        # Colocar la representación formateada del dron en la cuadrícula
+        self.grid[y][x] = drone_representation
+
+
+
 
     def display(self):
         print()

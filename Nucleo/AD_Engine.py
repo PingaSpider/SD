@@ -26,7 +26,8 @@ CLIMATE_SERVICE_PORT = 7777
 TEMPERATURE_COMFORTABLE_LOW = 17
 TEMPERATURE_COMFORTABLE_HIGH = 25
 TEMPERATURE_COLD_LIMIT = 5
-TEMPERATURE_HOT_LIMIT = 38  
+TEMPERATURE_HOT_LIMIT = 38 
+COUNT_DRONES = 0
 
 
 #################################################
@@ -99,6 +100,7 @@ class Engine:
         id_dron = drone_data["id"]
         token = drone_data["token"]
         drones_registered = self.load_drones()
+        global COUNT_DRONES
 
         # Inicializar la variable response por adelantado
         response = {"status": "error", "message": "Dron no autenticado"}
@@ -107,6 +109,7 @@ class Engine:
             if dron["id"] == id_dron:
                 if dron["token"] == token:
                     print(f"Dron {id_dron} autenticado exitosamente.")
+                    COUNT_DRONES += 1
                     response = {"status": "success", "message": "Autenticado"}
                     break  # Termina el bucle una vez que se autentica el dron
                 else:
@@ -402,14 +405,32 @@ class Engine:
         self.threads.append(end_show_thread)
         end_show_thread.start()
 
+    #LISTO
+
+    def menuAuth(self):
+        #Menu para solo autenticar drones
+        print("Bienvenido a la zona de autenticación")
+
         # Iniciar el hilo de autenticación
         auth_thread = threading.Thread(target=self.autenticate)
         self.threads.append(auth_thread)
         auth_thread.start()
 
-    #LISTO
-
-
+        #Contar cuantos drones tenemos registrados
+        drones_registered = self.load_drones()
+        drones_count = len(drones_registered)
+        print(f"Actualmente hay {drones_count} drones registrados.")
+        
+        #Esperar a que todos los drones se autentiquen
+        while COUNT_DRONES < drones_count:
+            #Imprimir cuantos drones se faltan por autenticar
+            print(f"Esperando {drones_count - COUNT_DRONES} drones por autenticar...")
+            time.sleep(4)
+            
+        print("Todos los drones se han autenticado correctamente.")
+        
+        return True
+        
 
     def stop_engine(self):
         self.shutdown_signal.set()  # Establecer la señal de apagado
@@ -424,19 +445,37 @@ class Engine:
             
             
     def menu(self):
-        print("Bienvenido al motor de la aplicación")
+        #mini funcion para obtener
+        def get_host_ip():
+            try:
+                # Create a socket to connect to an Internet host
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                # Connect the socket to a remote host on a given port (doesn't matter which one)
+                # Here we use Google's public DNS server and port 80.
+                s.connect(("8.8.8.8", 80))
+                # Get the IP address of the host machine where the script is running
+                ip = s.getsockname()[0]
+            finally:
+                # Always close the socket after use
+                s.close()
+            return ip
+
+        print("Bienvenido al motor de la aplicación con dirección IP: " + get_host_ip())
         print("Seleccione una opción: ")
         print("1. Iniciar el motor")
         print("2. Salir")
         option = input("Ingrese la opción: ")
         if option == "1":
-            self.start_engine()
+            if self.menuAuth():
+                self.start_engine()
         elif option == "2":
             print("Saliendo del motor...")
             exit()
         else:
             print("Opción inválida")
             self.menu()
+
+    
 
 #main de prueba
 def main():  
